@@ -1,0 +1,22 @@
+# https://docs.python.org/2/library/datetime.html#strftime-strptime-behavior
+broadcast_date_format = '%Y%m%d'
+
+# Possible values: [overwrite, ignore].
+remote_file_exists_action = 'overwrite'
+
+days_back = '1'
+
+[ftp]
+    host = 'b64encodedhost'
+    port = 'b64encodedport'
+    user = 'b64encodeduser'
+    password = 'b64encodedpassword'
+
+[dir]
+    local = '/tmp/audios'
+    log = '/tmp/log.txt'
+    ignore = 'falcas', 'musica'
+
+[audio_tags]
+    mp3 = 'Audio', 'layer III',
+    ogg = 'Ogg',
