@@ -8,6 +8,7 @@ from os.path import join, isdir, basename, splitext
 from subprocess import check_output, CalledProcessError
 from logging import getLogger, FileHandler, Formatter, INFO
 from datetime import date, datetime, timedelta
+from sys import argv
 
 class NoAudioFile(Exception):
     def __init__(self, value):
@@ -59,14 +60,14 @@ def if_audio_ensure_mp3(path_file):
             path_file_ogg, extension_ogg = splitext(path_file)
             path_file_mp3 = path_file_ogg + '.mp3'
             try:
-                # Debian
+                ''' Debian
                 check_output(['ffmpeg', '-y', '-loglevel', '-8', '-y', '-i',
                              path_file, '-acodec', 'libmp3lame', path_file_mp3])
-                ''' Ubuntu
+                '''
+                # Ubuntu
                 check_output(['avconv', '-y', '-loglevel', 'quiet', '-i',
                              path_file, '-c:a', 'libmp3lame', '-q:a', '2',
                              path_file_mp3])
-                '''
             except CalledProcessError, e:
                 logger.error(
                      'Error converting from .ogg to .mp3 %s. Eception: %s'\
@@ -84,6 +85,7 @@ def ftp_upload(dir, filename):
     ftp.login(b64decode(config['ftp']['user']),
               b64decode(config['ftp']['password']))
     file = open(join(dir, filename), 'rb')
+    logger.info('Uploading %s...' %(join(dir, filename)))
     ftp.storbinary('STOR %s' %(filename), file)
     file.close()
     ftp.quit()
@@ -97,6 +99,8 @@ formatter = Formatter( '%(asctime)s - %(lineno)s: %(levelname)s %(message)s' )
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 logger.setLevel(INFO)
+
+logger.info('START %s' %(argv[0]))
 
 ftp = FTP()
 
@@ -133,3 +137,5 @@ for dir in listdir(config['dir']['local']):
                     pass
                 else:
                     ftp_upload(join(config['dir']['local'], dir), file)
+
+logger.info('END %s' %(argv[0]))
