@@ -77,19 +77,22 @@ def if_audio_ensure_mp3(path_file):
         raise
     return path_file
 
-def ftp_upload(dir, filename):
-    "Uploads path_local_file"
+def ftp_upload(dir_filename_list):
+    "Uploads a list of (dir, filename)"
     ftp = FTP()
     ftp.connect(b64decode(config['ftp']['host']),
                 b64decode(config['ftp']['port']))
     ftp.login(b64decode(config['ftp']['user']),
-              b64decode(config['ftp']['password']))
-    file = open(join(dir, filename), 'rb')
-    logger.info('Uploading %s...' %(join(dir, filename)))
-    ftp.storbinary('STOR %s' %(filename), file)
-    file.close()
+               b64decode(config['ftp']['password']))
+
+    for dir_filename in dir_filename_list:
+        file_path = join(dir_filename[0], dir_filename[1])
+        file = open(file_path, 'rb')
+        logger.info('Uploading %s...' %(file_path))
+        ftp.storbinary('STOR %s' %(dir_filename[1]), file)
+        logger.info('FTP uploaded successfully: %s' %(file_path))
+        file.close()
     ftp.quit()
-    logger.info('FTP uploaded successfully: %s' %(join(dir, filename)))
 
 config = ConfigObj('config')
 
@@ -106,6 +109,8 @@ ftp = FTP()
 
 yesterday = (date.today() - timedelta(days=int(config['days_back']))).\
             strftime(config['broadcast_date_format'])
+
+files_to_upload = []
 
 for dir in listdir(config['dir']['local']):
     path_dir = join(config['dir']['local'],dir)
@@ -136,6 +141,9 @@ for dir in listdir(config['dir']['local']):
                 except WrongFilenameFormat:
                     pass
                 else:
-                    ftp_upload(join(config['dir']['local'], dir), file)
+                    #ftp_upload(join(config['dir']['local'], dir), file)
+                    files_to_upload.append((join(config['dir']['local'], dir),
+                                           file))
+ftp_upload(files_to_upload)
 
 logger.info('END %s' %(argv[0]))
