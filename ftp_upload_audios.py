@@ -26,7 +26,8 @@ def if_day_ok_format_filename(audio_dir, program, filename):
     "Validates date format and program in yyyymmdd-programname.mp3"
     path_file = join(audio_dir, program, filename)
     broadcast_date = path_file.split('/')[-1].split('-')[0]
-    if broadcast_date == yesterday:
+    if (broadcast_date >= past_date_start) and\
+                                             (broadcast_date <= past_date_end):
         # Let's check file name is the program name
         name, extension = splitext(filename)
         program_name = '-%s' %(program)
@@ -107,7 +108,9 @@ logger.info('START %s' %(argv[0]))
 
 ftp = FTP()
 
-yesterday = (date.today() - timedelta(days=int(config['days_back']))).\
+past_date_start = (date.today() - timedelta(days=int(config['days_back_start']))).\
+            strftime(config['broadcast_date_format'])
+past_date_end = (date.today() - timedelta(days=int(config['days_back_end']))).\
             strftime(config['broadcast_date_format'])
 
 files_to_upload = []
@@ -122,7 +125,9 @@ for dir in listdir(config['dir']['local']):
     if isdir(path_dir) and (len(file_list) > 0) and\
     not any(dir in ignored_dir for ignored_dir in config['dir']['ignore']):
         program = dir
-        next_broadcast = ''
+
+        logger.info('Checking "%s"' % (program))
+
         for file in file_list:
             path_file = join(config['dir']['local'], dir, file)
             try:
