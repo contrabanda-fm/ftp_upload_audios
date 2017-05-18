@@ -4,7 +4,7 @@ from configobj import ConfigObj
 from base64 import b64decode
 from ftplib import FTP
 from os import listdir, rename
-from os.path import join, isdir, basename, splitext
+from os.path import join, isdir, basename, splitext, isfile
 from subprocess import check_output, CalledProcessError
 from logging import getLogger, FileHandler, Formatter, INFO
 from datetime import date, datetime, timedelta
@@ -60,19 +60,25 @@ def if_audio_ensure_mp3(path_file):
         if get_audio_type(path_file) == '.ogg':
             path_file_ogg, extension_ogg = splitext(path_file)
             path_file_mp3 = path_file_ogg + '.mp3'
-            try:
-                ''' Debian
-                check_output(['ffmpeg', '-y', '-loglevel', '-8', '-y', '-i',
-                             path_file, '-acodec', 'libmp3lame', path_file_mp3])
-                '''
-                # Ubuntu
-                check_output(['avconv', '-y', '-loglevel', 'quiet', '-i',
-                             path_file, '-c:a', 'libmp3lame', '-q:a', '2',
-                             path_file_mp3])
-            except CalledProcessError, e:
-                logger.error(
-                     'Error converting from .ogg to .mp3 %s. Eception: %s'\
-                             %(path_file, e))
+            # NEW: let's check if corresponding .mp3 file already exists
+            if not isfile(path_file_mp3):
+                try:
+                    logger.info('Converting %s to MP3...' %(path_file))
+                    # Requires package libav-tools
+                    check_output(['avconv', '-y', '-loglevel', 'quiet', '-i',
+                                 path_file, '-c:a', 'libmp3lame', '-q:a', '2',
+                                 path_file_mp3])
+                    logger.info('Converting %s to MP3 finished' %(path_file))
+                except OSError, e:
+                     logger.error(
+                         'Missing required packages. Eception: %s'%(e))
+                except CalledProcessError, e:
+                    logger.error(
+                         'Error converting from .ogg to .mp3 %s. Eception: %s'\
+                                 %(path_file, e))
+            else:
+                logger.warning('%s already exists, skipping %s convert' \
+                               %(path_file_mp3, path_file))
             return path_file_mp3
     except NoAudioFile:
         raise
@@ -85,6 +91,8 @@ def ftp_upload(dir_filename_list):
                 b64decode(config['ftp']['port']))
     ftp.login(b64decode(config['ftp']['user']),
                b64decode(config['ftp']['password']))
+    # TODO: capture exception if remote file does not exists
+    ftp.cwd(config['dir']['remote'])
 
     for dir_filename in dir_filename_list:
         file_path = join(dir_filename[0], dir_filename[1])
@@ -149,6 +157,7 @@ for dir in listdir(config['dir']['local']):
                     #ftp_upload(join(config['dir']['local'], dir), file)
                     files_to_upload.append((join(config['dir']['local'], dir),
                                            file))
+
 ftp_upload(files_to_upload)
 
 logger.info('END %s' %(argv[0]))

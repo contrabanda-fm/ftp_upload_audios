@@ -4,6 +4,10 @@ broadcast_date_format = '%Y%m%d'
 # Possible values: [overwrite, ignore].
 remote_file_exists_action = 'overwrite'
 
+# TODO: what to do after converting .ogg to .mp3 with .ogg file?
+# Possible values: [remove, nothing].
+local_ogg_file_action = 'nothing'
+
 # Let's upload last week files
 days_back_start = 7
 days_back_end = 1
@@ -16,6 +20,7 @@ days_back_end = 1
 
 [dir]
     local = '/tmp/audios'
+    remote = '/'
     log = '/tmp/log.txt'
     ignore = 'falcas', 'musica'
 
