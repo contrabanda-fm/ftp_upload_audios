@@ -23,8 +23,8 @@ class WrongFilenameFormat(Exception):
     def __str__(self):
         return repr(self.value)
 
-def if_day_ok_format_filename(audio_dir, program, filename):
-    "Validates date format and program in yyyymmdd-programname.mp3"
+def is_day_and_file_format_ok(audio_dir, program, filename):
+    '''Validates file format YYYYMMDD-programname.mp3 and its date'''
     path_file = join(audio_dir, program, filename)
     broadcast_date = path_file.split('/')[-1].split('-')[0]
     if (broadcast_date >= past_date_start) and\
@@ -32,17 +32,9 @@ def if_day_ok_format_filename(audio_dir, program, filename):
         # Let's check file name is the program name
         name, extension = splitext(filename)
         program_name = '-%s' %(program)
-        if name.replace(broadcast_date, '', 1) != program_name:
-            # Rename the file
-            formatted_filename = '%s%s%s' %(broadcast_date, program_name,
-                                                                     extension)
-            # Rename the file
-            rename(join(audio_dir, program, filename),
-                   join(audio_dir, program, formatted_filename))
-            filename = formatted_filename
-    else:
-        raise WrongFilenameFormat(path_file)
-    return filename
+        if name.replace(broadcast_date, '', 1) == program_name:
+            return True
+    return False
 
 def get_audio_type(path_file):
     "Returns either .mp3 or .ogg"
@@ -142,28 +134,23 @@ for dir in listdir(config['dir']['local']):
     if isdir(path_dir) and (len(file_list) > 0) and\
     not any(dir in ignored_dir for ignored_dir in config['dir']['ignore']):
         program = dir
-
         logger.info('Checking "%s"' % (program))
-
         for file in file_list:
             path_file = join(config['dir']['local'], dir, file)
             file = basename(path_file)
-            try:
-                file = if_day_ok_format_filename(config['dir']['local'], dir,
-                                                 file)
-            except WrongFilenameFormat:
-                break
-            try:
-                path_file = if_audio_ensure_mp3(path_file)
-            except NoAudioFile:
-                if config['dir'] == 'remove':
-                    # TODO: implement
-                    pass
-                logger.warning('No audio file. Ignoring "%s"' % (path_file))
-                break
-            if is_url('%s%s' % (config['remote_url'], file)):
-                files_to_upload.append((join(config['dir']['local'], dir),
-                                       file))
+            if is_day_and_file_format_ok(config['dir']['local'], dir, file):
+                try:
+                    path_file = if_audio_ensure_mp3(path_file)
+                except NoAudioFile:
+                    if config['dir'] == 'remove':
+                        # TODO: implement
+                        pass
+                    logger.warning('No audio file. Ignoring "%s"' % (path_file))
+                else:
+                    if not (is_url('%s%s' % (config['remote_url'], file)) and\
+                       config['remote_file_exists_action'] == 'ignore'):
+                       files_to_upload.append((join(config['dir']['local'],
+                                              dir), file))
 
 if files_to_upload:
     ftp_upload(files_to_upload)
