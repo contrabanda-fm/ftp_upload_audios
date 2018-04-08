@@ -9,6 +9,7 @@ from subprocess import check_output, CalledProcessError
 from logging import getLogger, FileHandler, Formatter, INFO
 from datetime import date, datetime, timedelta
 from sys import argv
+from urllib2 import urlopen
 
 class NoAudioFile(Exception):
     def __init__(self, value):
@@ -103,6 +104,14 @@ def ftp_upload(dir_filename_list):
         file.close()
     ftp.quit()
 
+def is_url(url):
+    ''' Checks if the URL exists '''
+    # http://stackoverflow.com/questions/1966086/how-can-i-determine-if-anything-at-the-given-url-does-exist
+    code = urlopen(url).code
+    if (code / 100 >= 4):
+        return False
+    return True
+
 config = ConfigObj('config')
 
 handler = FileHandler(config['dir']['log'])
@@ -138,6 +147,12 @@ for dir in listdir(config['dir']['local']):
 
         for file in file_list:
             path_file = join(config['dir']['local'], dir, file)
+            file = basename(path_file)
+            try:
+                file = if_day_ok_format_filename(config['dir']['local'], dir,
+                                                 file)
+            except WrongFilenameFormat:
+                break
             try:
                 path_file = if_audio_ensure_mp3(path_file)
             except NoAudioFile:
@@ -145,19 +160,12 @@ for dir in listdir(config['dir']['local']):
                     # TODO: implement
                     pass
                 logger.warning('No audio file. Ignoring "%s"' % (path_file))
-            else:
-                # TODO: I need to set again file variable, since it can .mp3
-                file = basename(path_file)
-                try:
-                    file = if_day_ok_format_filename(config['dir']['local'],
-                                                    dir, file)
-                except WrongFilenameFormat:
-                    pass
-                else:
-                    #ftp_upload(join(config['dir']['local'], dir), file)
-                    files_to_upload.append((join(config['dir']['local'], dir),
-                                           file))
+                break
+            if is_url('%s%s' % (config['remote_url'], file)):
+                files_to_upload.append((join(config['dir']['local'], dir),
+                                       file))
 
-ftp_upload(files_to_upload)
+if files_to_upload:
+    ftp_upload(files_to_upload)
 
 logger.info('END %s' %(argv[0]))
