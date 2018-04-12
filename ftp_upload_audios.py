@@ -9,7 +9,7 @@ from subprocess import check_output, CalledProcessError
 from logging import getLogger, FileHandler, Formatter, INFO
 from datetime import date, datetime, timedelta
 from sys import argv
-from urllib2 import urlopen
+from requests import head
 
 class NoAudioFile(Exception):
     def __init__(self, value):
@@ -98,11 +98,13 @@ def ftp_upload(dir_filename_list):
 
 def is_url(url):
     ''' Checks if the URL exists '''
-    # http://stackoverflow.com/questions/1966086/how-can-i-determine-if-anything-at-the-given-url-does-exist
-    code = urlopen(url).code
-    if (code / 100 >= 4):
-        return False
-    return True
+    # https://stackoverflow.com/a/13641613
+    try:
+        if head(url).status_code == 200:
+            return True
+    except requests.ConnectionError as e:
+        logger.warning('Error %s while connecting to %s' %(e, url))
+    return False
 
 config = ConfigObj('config')
 
