@@ -15,10 +15,13 @@ remote_url = 'http://example.com/audio/'
     port = 'b64encodedport'
     user = 'b64encodeduser'
     password = 'b64encodedpassword'
+    # Default is 8192 bytes (8 KB)
+    blocksize = 102400
+
 
 [dir]
     local = '/tmp/audios'
-    local = '/'
+    local = 'web-audios/'
     log = '/tmp/log.txt'
     ignore = 'falcas', 'musica'
 
