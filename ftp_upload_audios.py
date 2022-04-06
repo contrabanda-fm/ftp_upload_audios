@@ -167,8 +167,7 @@ for dir in listdir(config["dir"]["local"]):
         for file in file_list:
             path_file = join(config["dir"]["local"], dir, file)
             file = basename(path_file)
-            # if is_day_and_file_format_ok(config['dir']['local'], dir, file):
-            if True:
+            if is_day_and_file_format_ok(config['dir']['local'], dir, file):
                 try:
                     # path_file = if_audio_ensure_mp3(path_file)
                     pass
